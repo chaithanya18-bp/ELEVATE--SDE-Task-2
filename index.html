@@ -1,0 +1,727 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CredVault</title>
+
+<style>
+
+*{
+box-sizing:border-box;
+}
+
+body{
+margin:0;
+font-family:Arial,sans-serif;
+background:#f1f5f9;
+color:#172554;
+}
+
+header{
+background:#102b55;
+color:white;
+padding:20px;
+text-align:center;
+}
+
+nav{
+display:flex;
+flex-wrap:wrap;
+justify-content:center;
+background:white;
+padding:10px;
+gap:7px;
+}
+
+button{
+border:0;
+padding:11px 14px;
+border-radius:7px;
+background:#2563eb;
+color:white;
+cursor:pointer;
+margin:3px;
+}
+
+nav button{
+background:#e2e8f0;
+color:#172554;
+}
+
+main{
+max-width:750px;
+margin:25px auto;
+padding:15px;
+}
+
+.page{
+display:none;
+background:white;
+padding:22px;
+border-radius:12px;
+box-shadow:0 3px 12px #0001;
+}
+
+.page.active{
+display:block;
+}
+
+h2{
+color:#1d4ed8;
+}
+
+input,select{
+width:100%;
+padding:12px;
+margin:8px 0 15px;
+border:1px solid #cbd5e1;
+border-radius:6px;
+}
+
+label{
+font-weight:bold;
+}
+
+.primary{
+width:100%;
+margin-top:8px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+font-size:13px;
+}
+
+td,th{
+padding:9px;
+border:1px solid #ddd;
+text-align:left;
+}
+
+.message{
+margin-top:15px;
+color:#15803d;
+font-weight:bold;
+}
+
+footer{
+text-align:center;
+padding:20px;
+color:#64748b;
+}
+
+/* CERTIFICATE PRINT */
+
+@media print{
+
+body *{
+visibility:hidden !important;
+}
+
+#cvPrint,
+#cvPrint *{
+visibility:visible !important;
+}
+
+#cvPrint{
+position:absolute !important;
+left:0 !important;
+top:0 !important;
+width:100% !important;
+margin:0 !important;
+padding:15px !important;
+background:white !important;
+}
+
+#cvPrint button{
+display:none !important;
+}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>CredVault</h1>
+<p>Digital Certificate Management System</p>
+</header>
+
+<nav>
+<button onclick="show('home')">Home</button>
+<button onclick="show('request')">Request</button>
+<button onclick="show('track')">Track</button>
+<button onclick="show('verify')">Verify</button>
+<button onclick="show('login')">Admin Login</button>
+</nav>
+
+<main>
+
+<!-- HOME PAGE -->
+
+<section id="home" class="page active">
+
+<h2>Welcome to CredVault</h2>
+
+<p>Your trusted digital certificate management platform.</p>
+
+<p>Apply for certificates, track applications and verify certificates easily.</p>
+
+<button onclick="show('request')">
+Request Certificate
+</button>
+
+</section>
+
+
+<!-- REQUEST PAGE -->
+
+<section id="request" class="page">
+
+<h2>Request Certificate</h2>
+
+<form id="requestForm">
+
+<label>Full Name</label>
+<input id="name" required placeholder="Enter your name">
+
+<label>Phone Number</label>
+<input id="phone" required type="tel"
+pattern="[0-9]{10}" placeholder="10 digit number">
+
+<label>Gender</label>
+
+<select id="gender" required>
+<option value="">Select Gender</option>
+<option>Male</option>
+<option>Female</option>
+<option>Other</option>
+</select>
+
+<label>City</label>
+<input id="city" required placeholder="Enter city">
+
+<label>State</label>
+<input id="state" required placeholder="Enter state">
+
+<button class="primary" type="submit">
+Submit Application
+</button>
+
+</form>
+
+<div id="requestMsg" class="message"></div>
+
+</section>
+
+
+<!-- TRACK PAGE -->
+
+<section id="track" class="page">
+
+<h2>Track Application</h2>
+
+<label>Application ID</label>
+
+<input id="trackId" placeholder="Example: APP1001">
+
+<button onclick="trackApplication()">
+Track
+</button>
+
+<div id="trackMsg" class="message"></div>
+
+</section>
+
+
+<!-- VERIFY PAGE -->
+
+<section id="verify" class="page">
+
+<h2>Verify Certificate</h2>
+
+<label>Certificate ID</label>
+
+<input id="certId" placeholder="Example: CERT1001">
+
+<button onclick="verifyCertificate()">
+Verify
+</button>
+
+<div id="verifyMsg" class="message"></div>
+
+</section>
+
+
+<!-- ADMIN LOGIN -->
+
+<section id="login" class="page">
+
+<h2>Admin Login</h2>
+
+<label>Username</label>
+<input id="username" placeholder="admin">
+
+<label>Password</label>
+<input id="password" type="password"
+placeholder="Enter password">
+
+<button onclick="adminLogin()">
+Login
+</button>
+
+<div id="loginMsg" class="message"></div>
+
+</section>
+
+
+<!-- ADMIN APPLICATIONS -->
+
+<section id="applications" class="page">
+
+<h2>Admin Applications</h2>
+
+<div id="applicationTable"></div>
+
+</section>
+
+
+<!-- ADMIN CERTIFICATES -->
+
+<section id="certificates" class="page">
+
+<h2>Admin Certificates</h2>
+
+<div id="certificateTable"></div>
+
+</section>
+
+</main>
+
+<footer>
+© 2026 CredVault | Digital Certificate System
+</footer>
+
+
+<script>
+
+// APPLICATION DATA
+
+let applications=[];
+
+let certificates=[
+{
+id:"CERT1001",
+name:"Demo Student",
+status:"Valid"
+}
+];
+
+let loggedIn=false;
+
+
+// PAGE NAVIGATION
+
+function show(id){
+
+if(
+(id==="applications" || id==="certificates")
+&&!loggedIn
+){
+
+alert("Please login as admin first");
+return;
+
+}
+
+document.querySelectorAll(".page").forEach(p=>{
+p.classList.remove("active");
+});
+
+document.getElementById(id).classList.add("active");
+
+}
+
+
+// SUBMIT APPLICATION
+
+document.getElementById("requestForm")
+.addEventListener("submit",function(e){
+
+e.preventDefault();
+
+let app={
+
+id:"APP"+(1001+applications.length),
+
+name:document.getElementById("name").value,
+
+phone:document.getElementById("phone").value,
+
+gender:document.getElementById("gender").value,
+
+city:document.getElementById("city").value,
+
+state:document.getElementById("state").value,
+
+status:"Pending"
+
+};
+
+applications.push(app);
+
+document.getElementById("requestMsg").innerHTML=
+"Application submitted! Your ID is: "+app.id;
+
+this.reset();
+
+});
+
+
+// TRACK APPLICATION
+
+function trackApplication(){
+
+let id=document.getElementById("trackId")
+.value.trim();
+
+let app=applications.find(a=>a.id===id);
+
+let result=app
+?"Name: "+escapeHTML(app.name)+
+"<br>Status: "+app.status
+:"Application not found.";
+
+document.getElementById("trackMsg").innerHTML=result;
+
+}
+
+
+// VERIFY CERTIFICATE
+
+function verifyCertificate(){
+
+let id=document.getElementById("certId")
+.value.trim();
+
+let cert=certificates.find(c=>c.id===id);
+
+document.getElementById("verifyMsg").innerHTML=
+
+cert
+?"Certificate belongs to "+escapeHTML(cert.name)+
+"<br>Status: "+cert.status
+:"Certificate not found.";
+
+}
+
+
+// ADMIN LOGIN
+
+function adminLogin(){
+
+let u=document.getElementById("username").value;
+
+let p=document.getElementById("password").value;
+
+if(u==="admin" && p==="admin123"){
+
+loggedIn=true;
+
+document.getElementById("loginMsg").innerHTML=
+"Login successful!";
+
+renderApplications();
+
+renderCertificates();
+
+show("applications");
+
+}else{
+
+document.getElementById("loginMsg").innerHTML=
+"Invalid username or password.";
+
+}
+
+}
+
+
+// DISPLAY APPLICATIONS
+
+function renderApplications(){
+
+let html=
+"<table><tr>"+
+"<th>Name</th>"+
+"<th>ID</th>"+
+"<th>Status</th>"+
+"<th>Action</th>"+
+"</tr>";
+
+applications.forEach((a,i)=>{
+
+html+="<tr><td>"+escapeHTML(a.name)+
+"</td><td>"+a.id+
+"</td><td>"+a.status+
+"</td><td>"+
+
+"<button onclick='issue("+i+")'>Issue</button>"+
+
+"<button onclick='reject("+i+")'>Reject</button>"+
+
+"</td></tr>";
+
+});
+
+html+="</table>";
+
+html+=
+"<br><button onclick=\"show('certificates')\">"+
+"View Certificates</button>";
+
+document.getElementById("applicationTable")
+.innerHTML=html;
+
+}
+
+
+// ISSUE CERTIFICATE
+
+function issue(i){
+
+let a=applications[i];
+
+if(!a || a.status!=="Pending"){
+
+alert("This application has already been processed.");
+
+return;
+
+}
+
+a.status="Approved";
+
+let id="CERT"+(1001+certificates.length);
+
+certificates.push({
+
+id:id,
+
+name:a.name,
+
+status:"Valid"
+
+});
+
+renderApplications();
+
+renderCertificates();
+
+alert("Certificate issued! ID: "+id);
+
+}
+
+
+// REJECT APPLICATION
+
+function reject(i){
+
+let a=applications[i];
+
+if(!a || a.status!=="Pending"){
+
+alert("This application has already been processed.");
+
+return;
+
+}
+
+a.status="Rejected";
+
+renderApplications();
+
+}
+
+
+// DISPLAY CERTIFICATES
+
+function renderCertificates(){
+
+let html=
+"<table><tr>"+
+"<th>Name</th>"+
+"<th>Certificate ID</th>"+
+"<th>Status</th>"+
+"<th>Action</th>"+
+"</tr>";
+
+certificates.forEach((c,i)=>{
+
+html+="<tr><td>"+escapeHTML(c.name)+
+"</td><td>"+c.id+
+"</td><td>"+c.status+
+"</td><td>"+
+
+"<button onclick='downloadCertificate("+i+")'>"+
+"Download</button>"+
+
+"<button onclick='revoke("+i+")'>"+
+"Revoke</button>"+
+
+"</td></tr>";
+
+});
+
+html+="</table>";
+
+document.getElementById("certificateTable")
+.innerHTML=html;
+
+}
+
+
+// REVOKE CERTIFICATE
+
+function revoke(i){
+
+let cert=certificates[i];
+
+if(!cert || cert.status!=="Valid"){
+
+alert("Certificate is already revoked.");
+
+return;
+
+}
+
+cert.status="Revoked";
+
+renderCertificates();
+
+}
+
+
+// DOWNLOAD CERTIFICATE
+// NO POPUP REQUIRED
+
+function downloadCertificate(i){
+
+let cert=certificates[i];
+
+if(!cert || cert.status!=="Valid"){
+
+alert("Only valid certificates can be downloaded.");
+
+return;
+
+}
+
+// Remove previous certificate preview
+
+let old=document.getElementById("cvPrint");
+
+if(old){
+old.remove();
+}
+
+// Create certificate preview
+
+let div=document.createElement("div");
+
+div.id="cvPrint";
+
+div.style.cssText=
+"position:fixed;inset:0;z-index:9999;"+
+"overflow:auto;background:#f1f5f9;padding:20px;";
+
+div.innerHTML=`
+
+<div style="
+border:8px double #1d4ed8;
+padding:35px 15px;
+margin:15px auto;
+max-width:700px;
+text-align:center;
+font-family:Arial;
+background:white;
+">
+
+<h1 style="color:#102b55">
+CREDVAULT
+</h1>
+
+<h2 style="color:#1d4ed8">
+Certificate of Verification
+</h2>
+
+<p>This certifies that</p>
+
+<h2>${escapeHTML(cert.name)}</h2>
+
+<p>
+has successfully completed the certificate
+verification process.
+</p>
+
+<p>
+Certificate ID: ${escapeHTML(cert.id)}
+</p>
+
+<h3 style="color:green">
+VALID CERTIFICATE
+</h3>
+
+<p>Issued by CredVault</p>
+
+<p>© 2026 CredVault</p>
+
+<button onclick="window.print()">
+Print / Save as PDF
+</button>
+
+<button onclick="document.getElementById('cvPrint').remove()">
+Back to CredVault
+</button>
+
+</div>
+
+`;
+
+document.body.appendChild(div);
+
+}
+
+
+// ESCAPE HTML
+
+function escapeHTML(value){
+
+return String(value).replace(/[&<>"']/g,function(ch){
+
+return {
+
+"&":"&amp;",
+
+"<":"&lt;",
+
+">":"&gt;",
+
+'"':"&quot;",
+
+"'":"&#39;"
+
+}[ch];
+
+});
+
+}
+
+</script>
+
+</body>
+</html>
